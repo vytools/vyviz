@@ -1,0 +1,54 @@
+:root {
+  --color-bgl: rgb(250,250,250);
+  --color-bg: whitesmoke;
+  --color-text: #141414;
+  --toolbar-width: 45px;
+  --headerheight: 43px;
+  --menu-width: 400px;
+}
+
+/* To use this add to <body data-theme="dark"> */
+[data-theme="dark"] {
+  --color-bg: #141414;
+  --color-text: whitesmoke;
+}
+
+.toolbar {z-index:1000;width:var(--toolbar-width);height:100%;background-color: var(--color-bg);}
+.full {width:100%;height:100%;overflow: hidden;}
+.sidebar {background-color: var(--color-bg);}
+div.mymessages {position: absolute; left:0px; bottom:0px;padding:10px;margin:0px}
+
+.workspace {position:absolute; height:100%; top:0px; width:calc(100% - var(--toolbar-width)); left:var(--toolbar-width);}
+/* .tab-pane.iframe {width:100%;height:100%;border: 5px solid;border-image: repeating-linear-gradient( -45deg, rgba(217, 83, 79, 1), rgba(217, 83, 79, 1) 15px, rgba(222, 108, 105, 0.5) 16px, rgba(222, 108, 105, 0.5) 30px) 10;} */
+.workspacetabs {min-height:500px; overflow:auto;}
+
+/* THINGTYPE SELECTOR */
+.thingtype {display:flex;}
+.thingtype button {flex:1; border-radius:0px !important; font-weight:bolder; font-size:1.2em; }
+.choices div { border-radius:0px !important; }
+.toolbar_buttons { position:absolute; left:0px; }
+.toolbar_buttons button {border-radius:0px !important; font-weight:bolder; font-size:1.2em; }
+
+/* GRAPH */
+div.graphheader {background-color: var(--color-bgl);height:var(--headerheight);}
+.globaltooltip {position: absolute; display: none; z-index: 100; font-size: 1.2em; color: var(--color-text); text-shadow: 0px 0px 8px var(--color-bg); font-weight: bolder; back}
+.flex-container {display: flex; }
+.detailview {background-color: var(--color-bg); flex-direction:row;}
+.itemdependencies {flex-direction:row; flex:1;}
+.itemtext {width:100%; height: calc(100% - var(--headerheight));}
+
+/* ITEMS MENU */
+.itemlist {overflow-y:auto;height:calc(100% - 110px)}
+.action-item-group {position:absolute;right:0px;top:0px;height:100%;background-color:var(--color-bg);opacity: 0.9;)}
+.hide {display: none;}
+.list-group-item:hover .hide {display:block;}
+.reversehide {display: block;}
+.list-group-item:hover .reversehide {display:none;}
+.episodefailed {font-size: 0.7em; color: darkred;}
+.episodepassed {font-size: 0.7em; color: darkgreen;}
+.list-group-item {border-radius: 0 !important;border: hidden;padding: 5px;background-color: var(--color-bg);}
+.list-group-item:hover {background-color: #eee !important;}
+.list-group-item.sel {background-color: #ddd !important;}
+.list-group-item.sel:hover {background-color: #eee !important;}
+
+.ellips {text-overflow: ellipsis;overflow: hidden;white-space: nowrap;width: 100%;}

@@ -1,0 +1,10 @@
+
+.eggs/
+
+build/
+
+dist/
+
+vyviz.egg-info/
+
+vyviz/__pycache__/
