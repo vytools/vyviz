@@ -1,7 +1,7 @@
-import vyviz.server
+from vyviz._server import server
 import vytools
 
-__version__ = "0.0.2"
+__version__ = "0.0.4"
 
 def _commandline():
   import argparse, shlex, os, logging
@@ -13,7 +13,7 @@ def _commandline():
     print(__version__)
     return
   vytools.scan()
-  vyviz.server.server(port=args.port)
+  server(port=args.port)
 
 if __name__ == '__main__':
   _commandline()

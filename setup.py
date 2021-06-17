@@ -26,7 +26,7 @@ setuptools.setup(name='vyviz',
     ],
     python_requires='>=3.6',
     packages=setuptools.find_packages(),
-    package_data = {'vytools': ['base/*']},
+    package_data = {'vyviz': ['base/*']},
     install_requires=[
         'sanic_cors==0.10.0.post3',
         'vytools>=0.2.6'
