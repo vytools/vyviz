@@ -23,8 +23,8 @@
     <link rel="stylesheet" href="/vy/base/main.css">
     <link rel="stylesheet" href="/vy/base/logs.css">
     <link rel="stylesheet" href="/vy/base/colors.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/natebu/jsutilities@v0.1.1/flex.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/natebu/jsutilities@v0.1.1/flex.js" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/natebu/jsutilities@v0.1.6/flex.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/gh/natebu/jsutilities@v0.1.6/flex.js" defer></script>
     <style>
       .choices__list--dropdown .choices__item--selectable { padding-right: 10px; }
     </style>
@@ -42,17 +42,17 @@
         <button class="btn usermenu"><i class="fas xpand fa-user"></i></button>
       </div>
       <div class="btn-group-vertical toolbar_buttons" style="bottom:0px;">
-        <button class="btn" onclick="rescan();"><i class="fas fa-redo"></i></button>
-        <button class="btn btn-secondary showmessages"><i class="fas fa-bell"></i></button>
+        <button class="btn" title="Reload vy components" onclick="rescan();"><i class="fas fa-redo"></i></button>
+        <button class="btn btn-secondary showmessages" title="Show/hide messages"><i class="fas fa-bell"></i></button>
       </div>
     </div>
 
     <flex class="workspace full h">
-      <flexitem class="sidebar" style="flex: 1;">
+      <flexitem class="sidebar" style="flex: 1;min-width: 400px;">
         <div class="tab-content sidebartabs full">
           <div class="tab-pane thingsidebar active full">
             <div class="btn-group thingtype"></div>
-            <select class="itemsearch" class="form-control" onchange="add_item(this);"></select>
+            <select class="itemsearch form-control" onchange="add_item(this);"></select>
             <div class="itemlist"></div>
           </div>
           <div class="tab-pane usersidebar full" style="padding:20px">
@@ -69,7 +69,7 @@
         <div class="mymessages" style="z-index:1000"></div>  
       </flexitem>
       <flexresizer></flexresizer>
-      <flex class="v" style="flex: 3;">
+      <flex class="v" style="flex: 10;">
         <flexitem style="flex: 4;">
           <div class="tab-content workspacetabs full">
             <div class="tab-pane active full detailview" onclick="window.onresize()">

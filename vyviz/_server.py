@@ -1,4 +1,5 @@
-import os, json, sys, threading, time
+import os, json, copy, threading, time
+import subprocess
 from pathlib import Path
 from vytools.config import CONFIG, ITEMS
 import vytools.utils as utils
@@ -8,7 +9,6 @@ from vytools._actions import scan
 import vytools.utils as utils
 import logging
 import asyncio
-import random
 import hashlib
 
 from sanic import Sanic, response
@@ -116,18 +116,20 @@ class StatusMsg:
       del self.messages[topic]
       await self.queue.put(self.messages)
 
-def server(items=None, jobpath=None, port=17171, subscribers=None, 
-    menu = None, sockets=None, top_level=None, hide_log=False):
-  
+def server(vyitems=None, jobpath=None, port=17171, subscribers=None, 
+    menu = None, sockets=None, top_level=None, hide_log=False, editable=False):
   rescannable = False
-  if items is None: 
+  IMAGES = {'images':{}}
+  if vyitems is None: 
     rescannable = True
-    items = ITEMS
+    IMAGES = vytools.info([], list_images=True)
+    vyitems = ITEMS
   if subscribers is None: subscribers = {}
   if sockets is None: sockets = {}
   STATUSES = None
   THREAD = {}
   LOGSBUFFER = []
+
   vytools.printer.set_buffer(LOGSBUFFER)
 
   async def check_running():
@@ -152,7 +154,7 @@ def server(items=None, jobpath=None, port=17171, subscribers=None,
 
   # logging.basicConfig(level=logging.DEBUG)
   resources={r"/vy/*": {"origins": "*"}}
-  for x in items:
+  for x in vyitems: # TODO can i get this to be rescannable?
     if x.startswith('vydir:'):
       vydir = x.split('/')[0].replace('vydir:','',1)
       resources[r"/{}/*".format(vydir)] = {"origins": "*"}
@@ -174,7 +176,7 @@ def server(items=None, jobpath=None, port=17171, subscribers=None,
 
   @app.route('<tag:path>', methods=['GET', 'OPTIONS'])
   async def _app_things(request, tag):
-    pth = vytools.utils.get_vd_path('vydir:'+tag,items)
+    pth = vytools.utils.get_vd_path('vydir:'+tag,vyitems)
     if pth:
       return await response.file(pth,headers={'Content-Type':mimetype(pth)})
     else:
@@ -191,41 +193,65 @@ def server(items=None, jobpath=None, port=17171, subscribers=None,
 
   @app.post('/vy/__<tag>__')
   async def _app_builtin(request, tag):
-    nonlocal THREAD
+    nonlocal THREAD, IMAGES
     if tag == 'init':
+      if request.json.get('rescan',False):
+        if not rescannable:
+          await STATUSES.add('rescan','Cannot rescan server','danger',timeout=5)
+          return response.json({'success':False})
+        await STATUSES.add('rescan','Rescanning...','info',timeout=5)
+        await asyncio.sleep(1)
+        scan(contextpaths=CONFIG.get('scanned'))
+        IMAGES = vytools.info([], list_images=True)
+        await STATUSES.add('delete','Rescanned','success',timeout=5)
+      merged_items = {k:v for k,v in vyitems.items()}
+      merged_items.update({k:v for k,v in IMAGES['images'].items()})
       rslt = {
-        'items':items,
+        'items':merged_items,
         'server_subscribers':[k for k in subscribers.keys()],
         'menu':CONFIG.get('menu') if menu is None else menu,
-        'hide_log':bool(hide_log)
+        'hide_log':bool(hide_log),
+        'success':True
       }
-      if top_level is not None and top_level in items: rslt['top_level'] = top_level
+      if top_level is not None and top_level in vyitems: rslt['top_level'] = top_level
       return response.json(rslt)
     elif tag == 'login':
       username = request.json.get('username')
       password = request.json.get('password')
       return response.json('User accounts are not yet enabled')
-    elif tag == 'rescan':
-      if rescannable:
-        scan(contextpaths=CONFIG.get('scanned'))
-      return response.json({'rescanned':rescannable})
+    elif tag == 'delete':
+      if editable:
+        name = request.json.get('name',None)
+        if name.startswith('image:'):
+          try:
+            r0 = subprocess.check_output(['docker','rmi',name.replace('image:','')]).decode('utf-8')
+            r1 = subprocess.check_output(['docker','builder','prune','-f']).decode('utf-8')
+            await app.logsqueue.put({'message':r0+r1})
+            await STATUSES.add('delete','Successfully deleted '+name,'success',timeout=5)
+            return response.json({'success':True})
+          except Exception as exc:
+            await STATUSES.add('delete','Failed to delete '+name,'danger',timeout=5)
+            await app.logsqueue.put({'message':'{}'.format(exc)})
+      else:
+        await STATUSES.add('delete','Server is not editable','warning',timeout=5)
+      return response.json({'success':False})
     elif tag == 'stop':
       vytools.composerun.stop()
     elif tag == 'compose':
-      return response.json(get_compose(request.json.get('name',''), items))
+      return response.json(get_compose(request.json.get('name',''), vyitems))
     elif tag == 'episode':
-      ep,pth = get_episode(request.json.get('name',''), items)
+      ep,pth = get_episode(request.json.get('name',''), vyitems)
       await STATUSES.add('episode',pth,timeout=5)
       return response.json(ep)
     elif tag == 'item':
-      pth = items.get(request.json.get('name',None),{}).get('path',None)
+      pth = vyitems.get(request.json.get('name',None),{}).get('path',None)
       if pth: return await response.file(pth)
     elif tag in ['build','run']:
       starting = False
       key = 'job_'+hash_request(request.json)
       if key not in THREAD or not THREAD[key].is_alive():
         await STATUSES.add(key,'Started job, no more jobs will be accepted until this one finishes','info')
-        THREAD[key] = threading.Thread(target=build_run, args=(request.json, tag, jobpath, items,), daemon=True)
+        THREAD[key] = threading.Thread(target=build_run, args=(request.json, tag, jobpath, vyitems,), daemon=True)
         THREAD[key].start()
         starting = bool(THREAD[key])
       else:
@@ -237,7 +263,7 @@ def server(items=None, jobpath=None, port=17171, subscribers=None,
       episode_name = request.json.get('name','')
       if episode_name.startswith('episode:'):
         artifact_name = request.json.get('artifact','_')
-        apaths = vytools.episode.artifact_paths(episode_name, items, jobpath=jobpath)
+        apaths = vytools.episode.artifact_paths(episode_name, vyitems, jobpath=jobpath)
         if artifact_name in apaths:
           return await response.file(apaths[artifact_name])
         else:

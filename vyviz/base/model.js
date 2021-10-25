@@ -10,6 +10,7 @@ export let MODEL = {
       stage:{bl:'St',color:'purple'},
       compose:{bl:'Co',color:'green'},
       episode:{bl:'Ep',color:'black'},
+      image:{bl:'Im',color:'pink'}
     }  
   },
   items : {},
@@ -24,11 +25,12 @@ export let MODEL = {
     let iframe = document.querySelector('iframe')
     if (iframe) iframe.setAttribute('srcdoc','');  
   },
-  init : function(cb) {
-    utilities.serverfetch('/vy/__init__',{},function(r) {
-      if(!r) return;
+  init : function(rescan, cb) {
+    utilities.serverfetch('/vy/__init__',{rescan:rescan},function(r) {
+      if (!r || !r.success) return;
       MODEL.top_level = (r.top_level) ? r.top_level : null;
       MODEL.hide_log = Boolean(r.hide_log);
+      MODEL.items = {};
       if (r.items) Object.keys(r.items).forEach(k => MODEL.items[k] = r.items[k]);
       if (r.menu) MODEL.menu = r.menu;
       MODEL.ilist = Object.keys(MODEL.items);
@@ -88,7 +90,8 @@ export function create_menu_item(v,actions) {
     {'action':'build','icon':'fa-hard-hat','enabled':['stage','compose','episode']},
     {'action':'run','icon':'fa-running','enabled':['episode']},
     {'action':'compose','icon':'fa-users-cog','enabled':['episode','compose']},
-    {'action':'remove','icon':'fa-times-circle'}
+    {'action':'remove','icon':'fa-times-circle'},
+    {'action':'delete','icon':'fa-trash'}
   ];
   return create_li({
     label:`${cfg.bl}:${item['name']}`,

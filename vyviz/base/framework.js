@@ -30,14 +30,7 @@ window.iframe_loaded = function(self) {
 }
 
 window.rescan = function() {
-  utilities.serverfetch('/vy/__rescan__', {},function(d) {
-    if (d.rescanned) {
-      window.set_message('rescan','info','Rescanned items',5);
-      init();
-    } else {
-      window.set_message('rescan','warning','Items are not rescannable',5);
-    }
-  });
+  init(true);
 }
 
 document.querySelector('form.login').addEventListener('submit', e => {
@@ -63,16 +56,6 @@ document.querySelector('.usermenu').addEventListener('click',e => {
   }
 });
 
-/* <div class="tab-content sidebartabs full">
-<div class="tab-pane active full">
-  <div class="btn-group thingtype"></div>
-  <select class="itemsearch" class="form-control" onchange="add_item(this);"></select>
-  <div class="itemlist"></div>
-</div>
-<div class="tab-pane usersidebar full">
-  User Menu
-</div> */
-
 document.querySelector('.showmessages').addEventListener('click',e => {
   let target = (e.target.classList.contains('.showmessages')) ? e.target : e.target.closest('.showmessages');
   let sm = target.querySelector('i');
@@ -93,7 +76,7 @@ document.querySelector('.showmessages').addEventListener('click',e => {
 
 window.add_item = function(self) { 
   add_to_menu(self.value);
-  select_item(self.value);
+  window.item_action(self.value,'graph')
 }
 
 window.add_to_menu = function (v) {
@@ -152,6 +135,20 @@ document.addEventListener('keyup',e => {
   }
 })
 
+const try_delete = function(name) {
+  let item = MODEL.items[name];
+  if (item.depended_on.length == 0) {
+    let c = prompt(`Are you sure you want to PERMANENTLY delete "${name}". Type "yes" and click ok`);
+    if (c == "yes") {
+      utilities.serverfetch('/vy/__delete__',{name:name},(r) => {
+        if (r.success) window.rescan();
+      });
+    }
+  } else {
+    window.set_message('delete','danger','Cannot delete item that is depended on by other items',4);
+  }
+}
+
 window.item_action = function(item, action, kwargs) {
   if (!item) return
   if (action=='remove') {
@@ -164,6 +161,8 @@ window.item_action = function(item, action, kwargs) {
   } else if (action=='run') {
     if (!kwargs) kwargs = {"build_args":{}, "clean":false};
     build_run('/vy/__run__', [item], kwargs);
+  } else if (action=='delete') {
+    try_delete(item);
   } else if (action=='compose') {
     compose_view(item);
   } else { //  default and (action=='graph')
@@ -181,7 +180,7 @@ document.querySelector('div.itemlist').onclick = function(event) {
   var target = utilities.get_event_target(event);
   let item = utilities.get_data_until(target,'item','LI');
   let action = utilities.get_data_until(target,'action','LI');
-  if (action=='remove' && event.detail <=1 ) return;
+  if ((action=='remove' || action=='delete') && event.detail <=1 ) return;
   if (event.detail==1 && action == 'build') {
     CLICKTIMER = setTimeout(() => {
       let skwargs = window.prompt("Build key word arguments",'{"build_args":{}, "build_level":1}');
@@ -197,8 +196,8 @@ document.querySelector('div.itemlist').onclick = function(event) {
   }
 }
 
-const init = function() {
-  MODEL.init(function() {
+const init = function(rescan) {
+  MODEL.init(rescan, function() {
     if (MODEL.top_level) {
       item_action(MODEL.top_level,'compose');
       document.querySelector('.sidebar').style.flexGrow = 0
@@ -216,4 +215,4 @@ window.onresize = function() {
   draw_graph();
 }
 
-init();  // INITIALIZATION ============================
+init(false);  // INITIALIZATION ============================

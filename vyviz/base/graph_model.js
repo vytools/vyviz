@@ -23,7 +23,7 @@ const set_editor = function(item, EDITOR) {
   if (!d) return;
   d.innerHTML = `${item}<br/><span><small>contents:</small></span>`;
   EDITOR_ITEM = item;
-  if (item.startsWith('repo:') || item.startsWith('vydir:') ) {
+  if (item.startsWith('repo:') || item.startsWith('vydir:') || item.startsWith('image:')) {
     populate_editor(item+'.json', JSON.stringify(MODEL.items[item],null,2), EDITOR);
   } else {
     utilities.serverfetch('/vy/__item__',{name:item},function(res) {
@@ -84,24 +84,24 @@ export function draw_graph() {
     itemdep.classList.add('v');
     if (r < 150) return;
     // div.style.flexDirection = 'row';
-    itemcon.style.flex = 2*w/h;
+    itemcon.style.flex = w/r-1;
   } else if (w/2-headerheight > 150) {
-    r = w/2 - headerheight;
+    r = w/2;
     topflex.classList.remove('h')
     topflex.classList.add('v');
     itemdep.classList.remove('v');
     itemdep.classList.add('h');
     if (r < 150) return;
     // div.style.flexDirection = 'column';
-    itemcon.style.flex = 2*h/w;
+    itemcon.style.flex = h/(r+headerheight) - 1;
   }
 
-  hA.innerHTML = `${MODEL.selected.name}<br/><span><small>depends on:</small></span>`
-  hB.innerHTML = `${MODEL.selected.name}<br/><span><small>depended on by:</small></span>`
+  hA.innerHTML = `${MODEL.selected.name}<br/><span><small><i class="fas fa-chevron-circle-down"></i> depends on:</small></span>`
+  hB.innerHTML = `${MODEL.selected.name}<br/><span><small><i class="fas fa-chevron-circle-up"></i> depended on by:</small></span>`
   let svgA = divA.querySelector('svg'); if (svgA) svgA.parentNode.removeChild(svgA);
   let svgB = divB.querySelector('svg'); if (svgB) svgB.parentNode.removeChild(svgB);
-  svgA = svg_partition_graph(r-headerheight, DEPENDS);
-  svgB = svg_partition_graph(r-headerheight, DEPENDED);
+  svgA = svg_partition_graph(r, DEPENDS);
+  svgB = svg_partition_graph(r, DEPENDED);
   divA.appendChild(svgA);
   divB.appendChild(svgB);
   resize_editor(EDITOR);
@@ -121,12 +121,11 @@ export function add_graphs() {
     // EDITOR.setTheme("ace/theme/twilight");
     EDITOR.setTheme("ace/theme/github");
   }
-
   DEPENDED = partition_graph(MODEL.selected.name, MODEL.items, 'depended_on');
   DEPENDS = partition_graph(MODEL.selected.name, MODEL.items, 'depends_on');
   DEPENDS.forEach(add_graph_actions);
   DEPENDED.forEach(add_graph_actions);
-  set_editor(MODEL.selected.name, EDITOR); 
+  set_editor(MODEL.selected.name, EDITOR);
   get_detailview();
 }
 
