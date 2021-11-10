@@ -29,7 +29,7 @@ setuptools.setup(name='vyviz',
     package_data = {'vyviz': ['base/*']},
     install_requires=[
         'sanic_cors==0.10.0.post3',
-        'vytools>=0.2.15'
+        'vytools>=0.2.16'
     ],
     entry_points={
         'console_scripts':[

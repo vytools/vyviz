@@ -1,12 +1,9 @@
-import os, json, copy, threading, time
+import os, json, threading, time
 import subprocess
 from pathlib import Path
 from vytools.config import CONFIG, ITEMS
-import vytools.utils as utils
-import vytools.object
 import vytools.episode
 from vytools._actions import scan
-import vytools.utils as utils
 import logging
 import asyncio
 import hashlib
@@ -28,24 +25,24 @@ def get_ui(req, items):
     loaded['html'] = Path(ui['path']).read_text()
   return loaded
 
-def get_episode(episode_name, items):
+def get_episode(episode_name, items, jobpath=None):
   ep = items.get(episode_name,{})
   loaded = {}
-  pth = 'Could not load "{}"'.format(episode_name)
+  msg = 'Could not load "{}"'.format(episode_name)
   if episode_name.startswith('episode:') and ep:
     anchors = vytools.episode.get_anchors(ep)
-    pth = 'Loaded episode "{n}" from definition at {p}'.format(n=episode_name,p=ep['path'])
+    msg = 'Loaded episode "{n}" from definition at {p}'.format(n=episode_name,p=ep['path'])
     loaded = get_compose(ep.get('compose',''),items,anchors=anchors)
     loaded['name'] = episode_name
-    eppath = vytools.episode.get_episode_path(episode_name,items=items)
+    eppath = vytools.episode.get_episode_path(episode_name,items=items,jobpath=jobpath)
     if eppath:
       try:
         with open(os.path.join(eppath,'vyanchors.json'),'r') as r:
           loaded['anchors'] = json.load(r)
-          pth = 'Loaded episode "{n}" from results at {p}'.format(n=episode_name,p=eppath)
+          msg = 'Loaded episode "{n}" from results at {p}'.format(n=episode_name,p=eppath)
       except Exception as exc:
-        logging.error('Failed to load anchors')
-  return (loaded,pth)
+        logging.error('Failed to load anchors {}'.format(exc))
+  return (loaded,msg)
 
 def get_compose(compose_name,items,anchors=None):
   compose = items.get(compose_name,{})
@@ -240,7 +237,7 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
     elif tag == 'compose':
       return response.json(get_compose(request.json.get('name',''), vyitems))
     elif tag == 'episode':
-      ep,pth = get_episode(request.json.get('name',''), vyitems)
+      ep,pth = get_episode(request.json.get('name',''), vyitems, jobpath=jobpath)
       await STATUSES.add('episode',pth,timeout=5)
       return response.json(ep)
     elif tag == 'item':
