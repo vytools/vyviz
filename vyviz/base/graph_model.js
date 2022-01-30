@@ -121,6 +121,21 @@ export function add_graphs() {
     // EDITOR.setTheme("ace/theme/twilight");
     EDITOR.setTheme("ace/theme/github");
   }
+
+  EDITOR.commands.addCommand({
+    name: 'cloudCloseScript',
+    bindKey: {win: 'Ctrl-S',  mac: 'Command-S'},
+    exec: function(env, args, request) {
+      if (MODEL && MODEL.selected && MODEL.selected.name) {
+        let typ = MODEL.selected.name.split(':')[0];
+        if (['definition','object','stage','compose','episode'].indexOf(typ) > -1) {
+          utilities.serverfetch('/vy/__save__',{name:MODEL.selected.name,value:EDITOR.getValue()})
+        }
+      }
+    },
+    readOnly: false // false if this command should not apply in readOnly mode
+  });
+
   DEPENDED = partition_graph(MODEL.selected.name, MODEL.items, 'depended_on');
   DEPENDS = partition_graph(MODEL.selected.name, MODEL.items, 'depends_on');
   DEPENDS.forEach(add_graph_actions);

@@ -2,6 +2,7 @@ import { MODEL } from './model.js';
 import { utilities } from './utilities.js';
 import './messages.js';
 import './log.js';
+import './actions.js';
 import { MENU } from './menuitems.js';
 import { type_buttons } from './typebuttons.js';
 import { draw_graph, add_graphs } from './graph_model.js';
@@ -120,49 +121,12 @@ const compose_view = function(v) {
   }
 }
 
-const build_run = function(cmd, list, kwargs) {
-  // if (cmd == '/vy/__run__') compose_view(item);
-  utilities.serverfetch(cmd,{list:list,kwargs:kwargs});
-}
-
-document.addEventListener('keyup',e => {
-  if (MODEL.selected && MODEL.selected.name) {
-    if (e.key == 'B') {
-      build_run('/vy/__build__', [MODEL.selected.name], {"build_args":{}, "build_level":(e.ctrlKey) ? 1 : 0})
-    } else if (e.key == "Enter" && e.shiftKey) {
-      build_run('/vy/__run__', [MODEL.selected.name], {"build_args":{}, "clean":false})
-    }
-  }
-})
-
-const try_delete = function(name) {
-  let item = MODEL.items[name];
-  if (item.depended_on.length == 0) {
-    let c = prompt(`Are you sure you want to PERMANENTLY delete "${name}". Type "yes" and click ok`);
-    if (c == "yes") {
-      utilities.serverfetch('/vy/__delete__',{name:name},(r) => {
-        if (r.success) window.rescan();
-      });
-    }
-  } else {
-    window.set_message('delete','danger','Cannot delete item that is depended on by other items',4);
-  }
-}
-
 window.item_action = function(item, action, kwargs) {
   if (!item) return
   if (action=='remove') {
     remove_from_menu(item);
   } else if (action=='add') {
     add_to_menu(item);
-  } else if (action=='build') {
-    if (!kwargs) kwargs = {"build_args":{}, "build_level":1};
-    build_run('/vy/__build__', [item], kwargs);
-  } else if (action=='run') {
-    if (!kwargs) kwargs = {"build_args":{}, "clean":false};
-    build_run('/vy/__run__', [item], kwargs);
-  } else if (action=='delete') {
-    try_delete(item);
   } else if (action=='compose') {
     compose_view(item);
   } else { //  default and (action=='graph')
@@ -180,20 +144,8 @@ document.querySelector('div.itemlist').onclick = function(event) {
   var target = utilities.get_event_target(event);
   let item = utilities.get_data_until(target,'item','LI');
   let action = utilities.get_data_until(target,'action','LI');
-  if ((action=='remove' || action=='delete') && event.detail <=1 ) return;
-  if (event.detail==1 && action == 'build') {
-    CLICKTIMER = setTimeout(() => {
-      let skwargs = window.prompt("Build key word arguments",'{"build_args":{}, "build_level":1}');
-      if (skwargs) item_action(item, action, JSON.parse(skwargs))
-    }, 300);
-  } else if (event.detail==1 && action == 'run') {
-    CLICKTIMER = setTimeout(() => {
-      let skwargs = window.prompt("Run key word arguments",'{"build_args":{}, "clean":false}');
-      if (skwargs) item_action(item, action, JSON.parse(skwargs))
-    }, 300);
-  } else {
-    item_action(item, action);
-  }
+  if ((action=='remove') && event.detail <=1 ) return;
+  item_action(item, action);
 }
 
 const init = function(rescan) {

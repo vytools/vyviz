@@ -18,6 +18,7 @@ logsconnection.onmessage = function (e) {
   }
 };
 
-document.querySelector('i.logs.fa-trash').onclick = function() {
+document.querySelector('button.eraselog').onclick = function() {
   if (EDITOR) clear_editor(EDITOR);
 }
+

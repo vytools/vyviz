@@ -87,11 +87,11 @@ export function create_menu_item(v,actions) {
   let cfg = MODEL.config.thingtypes[item.thingtype];
   let act = (actions) ? actions : [
     {'action':'graph','icon':'fa-bullseye'},
-    {'action':'build','icon':'fa-hard-hat','enabled':['stage','compose','episode']},
-    {'action':'run','icon':'fa-running','enabled':['episode']},
-    {'action':'compose','icon':'fa-users-cog','enabled':['episode','compose']},
+    // {'action':'build','icon':'fa-hard-hat','enabled':['stage','compose','episode']},
+    // {'action':'run','icon':'fa-running','enabled':['episode']},
+    {'action':'compose','icon':'fa-arrow-circle-up','enabled':['episode','compose']},
     {'action':'remove','icon':'fa-times-circle'},
-    {'action':'delete','icon':'fa-trash'}
+    // {'action':'delete','icon':'fa-trash'}
   ];
   return create_li({
     label:`${cfg.bl}:${item['name']}`,

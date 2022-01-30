@@ -64,11 +64,12 @@ def build_run(req, action, jobpath, items):
     if kwargs is None: kwargs = {}
     if 'jobpath' in kwargs: del kwargs['jobpath']
     if jobpath: kwargs['jobpath'] = jobpath
-    # kwargs['items'] = items # TODO Add this if you every make items a keyword
+    # kwargs['items'] = items # TODO Add this if you ever make items a keyword
     if action == 'build':
       vytools.build(req['list'],items,**kwargs)
     elif action == 'run':
       vytools.run(req['list'],items,**kwargs)
+
   except Exception as exc:
     vytools.printer.print_fail(str(exc))
     
@@ -216,6 +217,19 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
       username = request.json.get('username')
       password = request.json.get('password')
       return response.json('User accounts are not yet enabled')
+    elif tag == 'save':
+      if editable:
+        name = request.json.get('name',None)
+        value = request.json.get('value',None)
+        if name and name in vyitems and 'path' in vyitems[name] and value and any([name.startswith(t+':') for t in ['definition','object','stage','compose','episode']]):
+          try:
+            Path(vyitems[name]['path']).write_text(value)
+            await STATUSES.add('saved','Successfully saved '+name,'success',timeout=2)
+            return response.json({'success':True})
+          except:
+            pass
+      await STATUSES.add('saved','Failed to save '+name,'danger',timeout=2)
+      return response.json({'success':False})
     elif tag == 'delete':
       if editable:
         name = request.json.get('name',None)

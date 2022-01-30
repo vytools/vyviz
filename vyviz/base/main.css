@@ -22,6 +22,8 @@ div.mymessages {position: absolute; left:0px; bottom:0px;padding:10px;margin:0px
 /* .tab-pane.iframe {width:100%;height:100%;border: 5px solid;border-image: repeating-linear-gradient( -45deg, rgba(217, 83, 79, 1), rgba(217, 83, 79, 1) 15px, rgba(222, 108, 105, 0.5) 16px, rgba(222, 108, 105, 0.5) 30px) 10;} */
 .workspacetabs {min-height:500px; overflow:auto;}
 
+.sqr {border-radius: 0px !important;}
+
 /* THINGTYPE SELECTOR */
 .thingtype {display:flex;}
 .thingtype button {flex:1; border-radius:0px !important; font-weight:bolder; font-size:1.2em; }
