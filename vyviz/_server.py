@@ -203,7 +203,7 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
         IMAGES = vytools.info([], list_images=True)
         await STATUSES.add('delete','Rescanned','success',timeout=5)
       merged_items = {k:v for k,v in vyitems.items()}
-      merged_items.update({k:v for k,v in IMAGES['images'].items()})
+      merged_items.update({k:v for k,v in IMAGES.get('images',{}).items()})
       rslt = {
         'items':merged_items,
         'server_subscribers':[k for k in subscribers.keys()],
