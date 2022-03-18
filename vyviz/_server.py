@@ -116,6 +116,7 @@ class StatusMsg:
 
 def server(vyitems=None, jobpath=None, port=17171, subscribers=None, 
     menu = None, sockets=None, top_level=None, hide_log=False, editable=False):
+
   rescannable = False
   IMAGES = {'images':{}}
   if vyitems is None: 
@@ -129,6 +130,8 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
   LOGSBUFFER = []
 
   vytools.printer.set_buffer(LOGSBUFFER)
+  statusqueue = None
+  logsqueue = None
 
   async def check_running():
     nonlocal THREAD, LOGSBUFFER
@@ -156,17 +159,17 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
     if x.startswith('vydir:'):
       vydir = x.split('/')[0].replace('vydir:','',1)
       resources[r"/{}/*".format(vydir)] = {"origins": "*"}
-  app = Sanic(__name__)
+  app = Sanic("vyviz")
   CORS(app, resources, automatic_options=True)
 
   @app.listener('after_server_start')
   async def create_task_queue(app, loop):
-      nonlocal STATUSES
-      app.statusqueue = asyncio.Queue(loop=loop, maxsize=100)
-      app.logsqueue = asyncio.Queue(loop=loop, maxsize=100)
-      asyncio.create_task(logsbuffer(app.logsqueue))
+      nonlocal STATUSES, statusqueue, logsqueue
+      statusqueue = asyncio.Queue(loop=loop, maxsize=100)
+      logsqueue = asyncio.Queue(loop=loop, maxsize=100)
+      asyncio.create_task(logsbuffer(logsqueue))
       asyncio.create_task(check_running())
-      STATUSES = StatusMsg(app.statusqueue)
+      STATUSES = StatusMsg(statusqueue)
 
   app.static('/', os.path.join(BASEPATH, 'base', 'main.html'))
   app.static('/favicon.ico', os.path.join(BASEPATH, 'base', 'favicon.ico'))
@@ -174,6 +177,7 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
 
   @app.route('<tag:path>', methods=['GET', 'OPTIONS'])
   async def _app_things(request, tag):
+    print('hi',tag)
     pth = vytools.utils.get_thing_path('vydir:'+tag,vyitems)
     if pth:
       return await response.file(pth,headers={'Content-Type':mimetype(pth)})
@@ -191,7 +195,8 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
 
   @app.post('/vy/__<tag>__')
   async def _app_builtin(request, tag):
-    nonlocal THREAD, IMAGES
+    nonlocal THREAD, IMAGES, logsqueue
+    print('tag',tag)
     if tag == 'init':
       if request.json.get('rescan',False):
         if not rescannable:
@@ -237,12 +242,12 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
           try:
             r0 = subprocess.check_output(['docker','rmi',name.replace('image:','')]).decode('utf-8')
             r1 = subprocess.check_output(['docker','builder','prune','-f']).decode('utf-8')
-            await app.logsqueue.put({'message':r0+r1})
+            await logsqueue.put({'message':r0+r1})
             await STATUSES.add('delete','Successfully deleted '+name,'success',timeout=5)
             return response.json({'success':True})
           except Exception as exc:
             await STATUSES.add('delete','Failed to delete '+name,'danger',timeout=5)
-            await app.logsqueue.put({'message':'{}'.format(exc)})
+            await logsqueue.put({'message':'{}'.format(exc)})
       else:
         await STATUSES.add('delete','Server is not editable','warning',timeout=5)
       return response.json({'success':False})
@@ -283,14 +288,16 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
 
   @app.websocket('/vy/server_status')
   async def _app_server_status(request, ws):
+    nonlocal statusqueue
     while True:
-      msg = await app.statusqueue.get()
+      msg = await statusqueue.get()
       await ws.send(json.dumps(msg))
 
   @app.websocket('/vy/logging')
   async def _app_logs(request, ws):
+    nonlocal logsqueue
     while True:
-      msg = await app.logsqueue.get()
+      msg = await logsqueue.get()
       await ws.send(json.dumps(msg))
 
   try:
