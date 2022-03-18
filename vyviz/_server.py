@@ -54,7 +54,7 @@ def get_compose(compose_name,items,anchors=None):
       sc = vytools.compose.build(compose_name, items=items, anchors=anchors, build_level=-1)
       if sc:
         loaded['anchors'] = sc['anchors']
-    uipth = vytools.utils.get_vd_path(compose.get('ui',''),items)
+    uipth = vytools.utils.get_thing_path(compose.get('ui',''),items)
     if uipth: loaded['html'] = Path(uipth).read_text()
   return loaded
 
@@ -174,7 +174,7 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
 
   @app.route('<tag:path>', methods=['GET', 'OPTIONS'])
   async def _app_things(request, tag):
-    pth = vytools.utils.get_vd_path('vydir:'+tag,vyitems)
+    pth = vytools.utils.get_thing_path('vydir:'+tag,vyitems)
     if pth:
       return await response.file(pth,headers={'Content-Type':mimetype(pth)})
     else:
