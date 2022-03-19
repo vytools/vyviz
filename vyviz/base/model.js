@@ -26,7 +26,7 @@ export let MODEL = {
     if (iframe) iframe.setAttribute('srcdoc','');  
   },
   init : function(rescan, cb) {
-    utilities.serverfetch('/vy/__init__',{rescan:rescan},function(r) {
+    utilities.serverfetch('/vy/action/__init__',{rescan:rescan},function(r) {
       if (!r || !r.success) return;
       MODEL.top_level = (r.top_level) ? r.top_level : null;
       MODEL.hide_log = Boolean(r.hide_log);

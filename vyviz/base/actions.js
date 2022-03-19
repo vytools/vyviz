@@ -6,7 +6,7 @@ const try_delete = function(name) {
   if (item.depended_on.length == 0) {
     let c = prompt(`Are you sure you want to PERMANENTLY delete "${name}". Type "yes" and click ok`);
     if (c == "yes") {
-      utilities.serverfetch('/vy/__delete__',{name:name},(r) => {
+      utilities.serverfetch('/vy/action/__delete__',{name:name},(r) => {
         if (r.success) window.rescan();
       });
     }
@@ -34,7 +34,7 @@ const build_mode = function(e,toggle) {
       button.title = '(click) Build with all dependencies (right click) to toggle dependencies';
       button.innerHTML = fB+A;
     } else if (MODEL && MODEL.selected && MODEL.selected.name) {
-      utilities.serverfetch('/vy/__build__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "build_level":1}});
+      utilities.serverfetch('/vy/action/__build__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "build_level":1}});
     }
   } else {
     if (toggle) {
@@ -42,7 +42,7 @@ const build_mode = function(e,toggle) {
       button.title = buildtitle;
       button.innerHTML = fB;
     } else if (MODEL && MODEL.selected && MODEL.selected.name) {
-      utilities.serverfetch('/vy/__build__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "build_level":0}});
+      utilities.serverfetch('/vy/action/__build__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "build_level":0}});
     }
   }
 }
@@ -58,7 +58,7 @@ const run_mode = function(e,toggle) {
       button.title = '(click) Build then run (right click) to toggle build dependencies';
       button.innerHTML = fR+B;
     } else if (MODEL && MODEL.selected && MODEL.selected.name) {
-      utilities.serverfetch('/vy/__run__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "clean":false}});
+      utilities.serverfetch('/vy/action/__run__',{list:[MODEL.selected.name],kwargs:{"anchors":{}, "clean":false}});
     }
   } else if (action == 'run build') {
     if (toggle) {

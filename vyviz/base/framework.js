@@ -37,7 +37,7 @@ window.rescan = function() {
 document.querySelector('form.login').addEventListener('submit', e => {
   let data = Object.fromEntries(new FormData(e.target).entries());
   e.preventDefault();
-  utilities.serverfetch('/vy/__login__',data,r => {
+  utilities.serverfetch('/vy/action/__login__',data,r => {
     console.log('response',r)
   });
   return false;
@@ -83,7 +83,7 @@ window.add_item = function(self) {
 window.add_to_menu = function (v) {
   if (MODEL.menu.indexOf(v) == -1) { 
     MODEL.menu.push(v);
-    utilities.serverfetch('/vy/__menu__',MODEL.menu,null);
+    utilities.serverfetch('/vy/action/__menu__',MODEL.menu,null);
     MENU.update();
   }
 }
@@ -92,7 +92,7 @@ const remove_from_menu = function (v) {
   let idx = MODEL.menu.indexOf(v);
   if (idx > -1) {
     MODEL.menu.splice(idx,1);
-    utilities.serverfetch('/vy/__menu__',MODEL.menu,null);
+    utilities.serverfetch('/vy/action/__menu__',MODEL.menu,null);
     if (v == MODEL.selected.name) MODEL.clear_selected();
     MENU.update();
   }
@@ -111,8 +111,8 @@ const compose_view = function(v) {
   utilities.addclass('div.workspacetabs div.iframe','active');
 
   let split_name = v.split(':');
-  let typ = `/vy/__${split_name[0]}__`;
-  if (['/vy/__compose__', '/vy/__episode__'].indexOf(typ) > -1) {
+  let typ = `/vy/action/__${split_name[0]}__`;
+  if (['/vy/action/__compose__', '/vy/action/__episode__'].indexOf(typ) > -1) {
     utilities.serverfetch(typ, {name:v},function(d) {
       MODEL.selected.loaded = d;
       let src = (d.hasOwnProperty('html')) ? d.html : '<p>not found</p>';

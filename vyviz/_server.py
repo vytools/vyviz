@@ -65,9 +65,9 @@ def build_run(req, action, jobpath, items):
     if 'jobpath' in kwargs: del kwargs['jobpath']
     if jobpath: kwargs['jobpath'] = jobpath
     # kwargs['items'] = items # TODO Add this if you ever make items a keyword
-    if action == 'build':
+    if action == '__build__':
       vytools.build(req['list'],items,**kwargs)
-    elif action == 'run':
+    elif action == '__run__':
       vytools.run(req['list'],items,**kwargs)
 
   except Exception as exc:
@@ -130,8 +130,8 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
   LOGSBUFFER = []
 
   vytools.printer.set_buffer(LOGSBUFFER)
-  statusqueue = None
-  logsqueue = None
+  STATUSQUEUE = None
+  LOGSQUEUE = None
 
   async def check_running():
     nonlocal THREAD, LOGSBUFFER
@@ -158,46 +158,43 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
   for x in vyitems: # TODO can i get this to be rescannable?
     if x.startswith('vydir:'):
       vydir = x.split('/')[0].replace('vydir:','',1)
-      resources[r"/{}/*".format(vydir)] = {"origins": "*"}
+      resources[r"/{}/*".format(vydir)] = {"origins": "*", "methods": ["GET", "OPTIONS"]}
   app = Sanic("vyviz")
   CORS(app, resources, automatic_options=True)
 
   @app.listener('after_server_start')
   async def create_task_queue(app, loop):
-      nonlocal STATUSES, statusqueue, logsqueue
-      statusqueue = asyncio.Queue(loop=loop, maxsize=100)
-      logsqueue = asyncio.Queue(loop=loop, maxsize=100)
-      asyncio.create_task(logsbuffer(logsqueue))
+      nonlocal STATUSES, STATUSQUEUE, LOGSQUEUE
+      STATUSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
+      LOGSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
+      asyncio.create_task(logsbuffer(LOGSQUEUE))
       asyncio.create_task(check_running())
-      STATUSES = StatusMsg(statusqueue)
+      STATUSES = StatusMsg(STATUSQUEUE)
 
   app.static('/', os.path.join(BASEPATH, 'base', 'main.html'))
   app.static('/favicon.ico', os.path.join(BASEPATH, 'base', 'favicon.ico'))
   app.static('/vy/base', os.path.join(BASEPATH, 'base'))
 
+  @app.route('/vy/subscribers/<tag>', methods=['POST', 'OPTIONS'])
+  async def _app_subscribers(request, tag):
+    if tag in subscribers:
+      return response.json(subscribers[tag](request.json) if tag in subscribers else {})
+    return response.json({})
+
   @app.route('<tag:path>', methods=['GET', 'OPTIONS'])
   async def _app_things(request, tag):
-    print('hi',tag)
+    if tag.startswith('/vy/'):
+      return response.empty()
     pth = vytools.utils.get_thing_path('vydir:'+tag,vyitems)
     if pth:
       return await response.file(pth,headers={'Content-Type':mimetype(pth)})
     else:
       return response.empty()
 
-  @app.post('/vy/subscribers/<tag>')
-  async def _app_subscribers(request, tag):
-    if tag in subscribers:
-      return response.json(subscribers[tag](request.json) if tag in subscribers else {})
-    return response.json({})
-
-  for tag in sockets:
-    app.add_websocket_route(sockets[tag], tag)
-
-  @app.post('/vy/__<tag>__')
+  @app.post('/vy/action/<tag>')
   async def _app_builtin(request, tag):
-    nonlocal THREAD, IMAGES, logsqueue
-    print('tag',tag)
-    if tag == 'init':
+    nonlocal THREAD, IMAGES, LOGSQUEUE
+    if tag == '__init__':
       if request.json.get('rescan',False):
         if not rescannable:
           await STATUSES.add('rescan','Cannot rescan server','danger',timeout=5)
@@ -218,11 +215,11 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
       }
       if top_level is not None and top_level in vyitems: rslt['top_level'] = top_level
       return response.json(rslt)
-    elif tag == 'login':
+    elif tag == '__login__':
       username = request.json.get('username')
       password = request.json.get('password')
       return response.json('User accounts are not yet enabled')
-    elif tag == 'save':
+    elif tag == '__save__':
       if editable:
         name = request.json.get('name',None)
         value = request.json.get('value',None)
@@ -235,34 +232,34 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
             pass
       await STATUSES.add('saved','Failed to save '+name,'danger',timeout=2)
       return response.json({'success':False})
-    elif tag == 'delete':
+    elif tag == '__delete__':
       if editable:
         name = request.json.get('name',None)
         if name.startswith('image:'):
           try:
             r0 = subprocess.check_output(['docker','rmi',name.replace('image:','')]).decode('utf-8')
             r1 = subprocess.check_output(['docker','builder','prune','-f']).decode('utf-8')
-            await logsqueue.put({'message':r0+r1})
+            await LOGSQUEUE.put({'message':r0+r1})
             await STATUSES.add('delete','Successfully deleted '+name,'success',timeout=5)
             return response.json({'success':True})
           except Exception as exc:
             await STATUSES.add('delete','Failed to delete '+name,'danger',timeout=5)
-            await logsqueue.put({'message':'{}'.format(exc)})
+            await LOGSQUEUE.put({'message':'{}'.format(exc)})
       else:
         await STATUSES.add('delete','Server is not editable','warning',timeout=5)
       return response.json({'success':False})
-    elif tag == 'stop':
+    elif tag == '__stop__':
       vytools.composerun.stop()
-    elif tag == 'compose':
+    elif tag == '__compose__':
       return response.json(get_compose(request.json.get('name',''), vyitems))
-    elif tag == 'episode':
+    elif tag == '__episode__':
       ep,pth = get_episode(request.json.get('name',''), vyitems, jobpath=jobpath)
       await STATUSES.add('episode',pth,timeout=5)
       return response.json(ep)
-    elif tag == 'item':
+    elif tag == '__item__':
       pth = vyitems.get(request.json.get('name',None),{}).get('path',None)
       if pth: return await response.file(pth)
-    elif tag in ['build','run']:
+    elif tag in ['__build__','__run__']:
       starting = False
       key = 'job_'+hash_request(request.json)
       if key not in THREAD or not THREAD[key].is_alive():
@@ -273,9 +270,9 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
       else:
         await STATUSES.add(key,'Wait until current job finishes','info')
       return response.json({'starting':starting})
-    elif tag == 'menu':
+    elif tag == '__menu__':
       if menu is None: CONFIG.set('menu',request.json)
-    elif tag == 'artifact':
+    elif tag == '__artifact__':
       episode_name = request.json.get('name','')
       if episode_name.startswith('episode:'):
         artifact_name = request.json.get('artifact','_')
@@ -286,18 +283,21 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
           logging.error('Could not find artifact {n} in {l}'.format(n=artifact_name,l=','.join(apaths)))
     return response.json({})
 
+  for tag in sockets:
+    app.add_websocket_route(sockets[tag], tag)
+
   @app.websocket('/vy/server_status')
   async def _app_server_status(request, ws):
-    nonlocal statusqueue
+    nonlocal STATUSQUEUE
     while True:
-      msg = await statusqueue.get()
+      msg = await STATUSQUEUE.get()
       await ws.send(json.dumps(msg))
 
   @app.websocket('/vy/logging')
   async def _app_logs(request, ws):
-    nonlocal logsqueue
+    nonlocal LOGSQUEUE
     while True:
-      msg = await logsqueue.get()
+      msg = await LOGSQUEUE.get()
       await ws.send(json.dumps(msg))
 
   try:

@@ -111,7 +111,7 @@ const load_item = function(loaded) {
   // if (loaded.calibration) calibrate(loaded.calibration, true);
   throttled_callback('calibrate','-',JSON.parse(JSON.stringify(ANCHORS)));
   Object.keys(CALLBACKS.artifact).forEach(function(artifact_name) {
-    vyfetch('/vy/__artifact__',{name:loaded.name, artifact:artifact_name},
+    vyfetch('/vy/action/__artifact__',{name:loaded.name, artifact:artifact_name},
       art => throttled_callback('artifact',artifact_name,art));
   });
 }
