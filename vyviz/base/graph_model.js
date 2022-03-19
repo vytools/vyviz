@@ -26,7 +26,7 @@ const set_editor = function(item, EDITOR) {
   if (item.startsWith('repo:') || item.startsWith('vydir:') || item.startsWith('image:')) {
     populate_editor(item+'.json', JSON.stringify(MODEL.items[item],null,2), EDITOR);
   } else {
-    utilities.serverfetch('/vy/__item__',{name:item},function(res) {
+    utilities.serverfetch('/vy/action/__item__',{name:item},function(res) {
       if (res) populate_editor(item, res, EDITOR);
     })
   }
@@ -129,7 +129,7 @@ export function add_graphs() {
       if (MODEL && MODEL.selected && MODEL.selected.name) {
         let typ = MODEL.selected.name.split(':')[0];
         if (['definition','object','stage','compose','episode'].indexOf(typ) > -1) {
-          utilities.serverfetch('/vy/__save__',{name:MODEL.selected.name,value:EDITOR.getValue()})
+          utilities.serverfetch('/vy/action/__save__',{name:MODEL.selected.name,value:EDITOR.getValue()})
         }
       }
     },
