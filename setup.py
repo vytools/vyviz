@@ -24,12 +24,12 @@ setuptools.setup(name='vyviz',
         "Programming Language :: Python :: 3",
         "Topic :: Other/Nonlisted Topic"
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     packages=setuptools.find_packages(),
     package_data = {'vyviz': ['base/*']},
     install_requires=[
-        'sanic_cors==0.10.0.post3',
-        'vytools>=0.3.0'
+        'sanic_cors>=2.0.1',
+        'vytools>=0.4.2'
     ],
     entry_points={
         'console_scripts':[
