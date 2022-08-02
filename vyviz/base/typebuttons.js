@@ -13,7 +13,7 @@ let thingtype_button_click_ = function(typ) {
   let i = typ + ':';
   let c = MODEL.ilist.filter(k => k.startsWith(i))
     .map(k => {
-      let it = MODEL.items[k];
+      let it = MODEL.itmscontent[k];
       let icon1 = it.not_vy ? i_none : ((it.depends_on.length == 0) ? i_dep_nup : i_dep_up);
       let icon2 = it.not_vy ? i_none : ((it.depended_on.length == 0) ? i_dep_ndn : i_dep_dn);
       return {label:icon1+icon2+k.replace(i,''), value:k}

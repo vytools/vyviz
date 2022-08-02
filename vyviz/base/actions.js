@@ -2,7 +2,7 @@ import { utilities } from './utilities.js';
 import { MODEL } from './model.js';
 
 const try_delete = function(name) {
-  let item = MODEL.items[name];
+  let item = MODEL.itmscontent[name];
   if (item.depended_on.length == 0) {
     let c = prompt(`Are you sure you want to PERMANENTLY delete "${name}". Type "yes" and click ok`);
     if (c == "yes") {

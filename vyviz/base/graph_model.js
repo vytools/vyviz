@@ -21,10 +21,11 @@ const is_detailview = function() {
 const set_editor = function(item, EDITOR) {
   let d = document.querySelector('.itemcontents .graphheader');
   if (!d) return;
-  d.innerHTML = `${item}<br/><span><small>contents:</small></span>`;
+  let it = MODEL.itmscontent[item];
+  d.innerHTML = `${item}<br/><span><small>path:${(it && it.path) ? it.path : '?'}</small></span>`;
   EDITOR_ITEM = item;
   if (item.startsWith('repo:') || item.startsWith('vydir:') || item.startsWith('image:')) {
-    populate_editor(item+'.json', JSON.stringify(MODEL.items[item],null,2), EDITOR);
+    populate_editor(item+'.json', JSON.stringify(it,null,2), EDITOR);
   } else {
     utilities.serverfetch('/vy/action/__item__',{name:item},function(res) {
       if (res) populate_editor(item, res, EDITOR);
@@ -136,8 +137,8 @@ export function add_graphs() {
     readOnly: false // false if this command should not apply in readOnly mode
   });
 
-  DEPENDED = partition_graph(MODEL.selected.name, MODEL.items, 'depended_on');
-  DEPENDS = partition_graph(MODEL.selected.name, MODEL.items, 'depends_on');
+  DEPENDED = partition_graph(MODEL.selected.name, MODEL.itmscontent, 'depended_on');
+  DEPENDS = partition_graph(MODEL.selected.name, MODEL.itmscontent, 'depends_on');
   DEPENDS.forEach(add_graph_actions);
   DEPENDED.forEach(add_graph_actions);
   set_editor(MODEL.selected.name, EDITOR);

@@ -13,7 +13,7 @@ export let MODEL = {
       image:{bl:'Im',color:'pink'}
     }  
   },
-  items : {},
+  itmscontent : {},
   ilist : [],
   top_level: null,
   hide_log: false,
@@ -30,10 +30,11 @@ export let MODEL = {
       if (!r || !r.success) return;
       MODEL.top_level = (r.top_level) ? r.top_level : null;
       MODEL.hide_log = Boolean(r.hide_log);
-      MODEL.items = {};
-      if (r.items) Object.keys(r.items).forEach(k => MODEL.items[k] = r.items[k]);
+      MODEL.itmscontent = {};
+      if (r.itmscontent) Object.keys(r.itmscontent).forEach(k => MODEL.itmscontent[k] = r.itmscontent[k]);
+      window.itmscontent = MODEL.itmscontent
       if (r.menu) MODEL.menu = r.menu;
-      MODEL.ilist = Object.keys(MODEL.items);
+      MODEL.ilist = Object.keys(MODEL.itmscontent);
       if (cb) cb();
     });
   }  
@@ -83,7 +84,7 @@ const create_li = function(z) {
 }
 
 export function create_menu_item(v,actions) {
-  let item = MODEL.items[v];
+  let item = MODEL.itmscontent[v];
   let cfg = MODEL.config.thingtypes[item.thingtype];
   let act = (actions) ? actions : [
     {'action':'graph','icon':'fa-bullseye'},
@@ -103,7 +104,7 @@ export function create_menu_item(v,actions) {
 }
 
 export function make_item_list(lst) {
-  return lst.filter(v => MODEL.items.hasOwnProperty(v))
+  return lst.filter(v => MODEL.itmscontent.hasOwnProperty(v))
             .map(v => create_menu_item(v,null));
 }
 

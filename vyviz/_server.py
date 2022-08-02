@@ -206,8 +206,9 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
         await STATUSES.add('delete','Rescanned','success',timeout=5)
       merged_items = {k:v for k,v in vyitems.items()}
       merged_items.update({k:v for k,v in IMAGES.get('images',{}).items()})
+      # meta_content = {k:{'path':v['path']} for k,v in ITEMS}
       rslt = {
-        'items':merged_items,
+        'itmscontent':merged_items,
         'server_subscribers':[k for k in subscribers.keys()],
         'menu':CONFIG.get('menu') if menu is None else menu,
         'hide_log':bool(hide_log),
