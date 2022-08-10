@@ -1,4 +1,4 @@
-import os, json, threading, time
+import os, json, threading, time, sys
 import subprocess
 from pathlib import Path
 from vytools.config import CONFIG, ITEMS
@@ -165,8 +165,12 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
   @app.listener('after_server_start')
   async def create_task_queue(app, loop):
       nonlocal STATUSES, STATUSQUEUE, LOGSQUEUE
-      STATUSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
-      LOGSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
+      if sys.version_info.major == 3 and sys.version_info.minor >= 10:
+        STATUSQUEUE = asyncio.Queue(maxsize=100)
+        LOGSQUEUE = asyncio.Queue(maxsize=100)
+      else:
+        STATUSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
+        LOGSQUEUE = asyncio.Queue(loop=loop, maxsize=100)
       asyncio.create_task(logsbuffer(LOGSQUEUE))
       asyncio.create_task(check_running())
       STATUSES = StatusMsg(STATUSQUEUE)
