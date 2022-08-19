@@ -79,12 +79,6 @@ const run_mode = function(e,toggle) {
   }
 }
 
-// if args.build:
-// br = vytools.build(lst, anchors=anchors, build_level=build_level, compose=rootcompose)
-// if br == False: return False
-// return bool(vytools.run(lst, anchors=anchors, clean=args.clean, save=args.save, object_mods=object_mods, cmd=cmd, persist=persist, compose=rootcompose))
-
-
 let BuildButton = document.querySelector('button.buildthing');
 let RunButton = document.querySelector('button.runthing');
 let DeleteButton = document.querySelector('button.deletething');

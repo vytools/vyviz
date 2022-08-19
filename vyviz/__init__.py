@@ -1,7 +1,7 @@
 from vyviz._server import server
 import vytools
 
-__version__ = "0.0.11"
+__version__ = "0.0.12"
 
 def _commandline():
   import argparse, shlex, os, logging

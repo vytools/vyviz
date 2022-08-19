@@ -17,14 +17,19 @@ window.addEventListener('message',function(e) {
   }
 });
 
+let IFRAME = document.querySelector('iframe');
 window.iframe_resize = function(ev) {
-  let iframe = document.querySelector('iframe');
   if (ev.type == 'mousedown') {
-    iframe.style.display = 'none';
+    IFRAME.style.display = 'none';
   } else if (ev.type == 'mouseup') {
-    iframe.style.display = 'inherit';
+    IFRAME.style.display = 'inherit';
   }
 }
+
+document.querySelector('body').addEventListener('mouseup',ev => {
+  // iframe_resize not triggered when you mouse up and the window wasn't very recently resized, need this
+  IFRAME.style.display = 'inherit';
+});
 
 window.iframe_loaded = function(self) {
   self.contentWindow.postMessage({id:'__initialize__',data:MODEL.selected.loaded},'*');
