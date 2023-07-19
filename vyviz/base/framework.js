@@ -10,10 +10,14 @@ import { draw_graph, add_graphs } from './graph_model.js';
 window.toggleclass = utilities.toggleclass;
 window.addEventListener('message',function(e) {
   let iframe = document.querySelector('iframe');
-  if (e.origin == 'null' && e.source === iframe.contentWindow) {
-    utilities.serverfetch(e.data.topic, e.data.data, function(r) {
-      iframe.contentWindow.postMessage({id:e.data.id,data:r},'*');
-    });
+  if (e.origin == 'null' && e.source === iframe.contentWindow && e.data.topic) {
+    if (e.data.topic == '__sub_episode__') {
+      compose_view(e.data.name, e.data.suffix);
+    } else {
+      utilities.serverfetch(e.data.topic, e.data.data, function(r) {
+        iframe.contentWindow.postMessage({id:e.data.id,data:r},'*');
+      });
+    }
   }
 });
 
@@ -109,19 +113,33 @@ const select_item = function(v) {
   MODEL.selected.name = v;
 }
 
-const compose_view = function(v) {
+const compose_view = function(v,episode_suffix) {
   select_item(v);
   let iframe = document.querySelector('div.workspacetabs div.iframe iframe');
   utilities.removeclass('div.workspacetabs div','active');
   utilities.addclass('div.workspacetabs div.iframe','active');
-
   let split_name = v.split(':');
   let typ = `/vy/action/__${split_name[0]}__`;
   if (['/vy/action/__compose__', '/vy/action/__episode__'].indexOf(typ) > -1) {
-    utilities.serverfetch(typ, {name:v},function(d) {
-      MODEL.selected.loaded = d;
-      let src = (d.hasOwnProperty('html')) ? d.html : '<p>not found</p>';
-      iframe.setAttribute('srcdoc',src);
+    utilities.serverfetch(typ, {name:v,suffix:episode_suffix},function(d) {
+      if (d.hasOwnProperty('suffixes')) {
+        let butts = d.suffixes.map(s => `<button class="btn btn-sm btn-secondary m-1">${s}</button>`).join('');
+        iframe.setAttribute('srcdoc',`<html>
+        <head>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+        </head>
+        ${butts}
+        <script>let name="${v}";
+        document.addEventListener('click',(ev) => {
+          let x = ev.target.closest('button');
+          if (x) parent.postMessage({topic:'__sub_episode__', name:name, suffix:x.innerHTML},"*");
+        })
+        </script></html>`);
+      } else {
+        MODEL.selected.loaded = d;
+        let src = (d.hasOwnProperty('html')) ? d.html : '<p>not found</p>';
+        iframe.setAttribute('srcdoc',src);
+      }
     });
   }
 }
@@ -133,7 +151,7 @@ window.item_action = function(item, action, kwargs) {
   } else if (action=='add') {
     add_to_menu(item);
   } else if (action=='compose') {
-    compose_view(item);
+    compose_view(item,null);
   } else { //  default and (action=='graph')
     select_item(item);
     add_graphs();

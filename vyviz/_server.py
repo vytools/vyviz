@@ -16,35 +16,36 @@ BASEPATH = os.path.dirname(os.path.realpath(__file__))
 def hash_request(dictx):
   return hashlib.sha1(json.dumps(dictx, sort_keys=True).encode()).hexdigest()
 
-def get_ui(req, items):
-  ui_name = req.get('name','')
-  ui = items.get(ui_name,None)
-  loaded = {'html':'Could not find '+ui_name}
-  if ui:
-    loaded['name'] = ui_name
-    loaded['html'] = Path(ui['path']).read_text()
-  return loaded
+def sub_episode_get(episode_name, items, suffix, jobpath):
+  epperms = vytools.episode.get_episode_permutations(episode_name, items=items, jobpath=jobpath)
+  keys = [k for k in epperms.keys()]
+  if suffix is None and len(keys) == 1:
+    return epperms[keys[0]]
+  return None if suffix is None or suffix not in epperms else epperms[suffix]
 
-def get_episode(episode_name, items, jobpath=None):
+def episode_get(episode_name, items, suffix=None, jobpath=None):
   ep = items.get(episode_name,{})
   loaded = {}
   msg = 'Could not load "{}"'.format(episode_name)
   if episode_name.startswith('episode:') and ep:
     anchors = vytools.episode.get_anchors(ep)
     msg = 'Loaded episode "{n}" from definition at {p}'.format(n=episode_name,p=ep['path'])
-    loaded = get_compose(ep.get('compose',''),items,anchors=anchors)
+    loaded = compose_get(ep.get('compose',''),items,anchors=anchors)
     loaded['name'] = episode_name
-    eppath = vytools.episode.get_episode_path(episode_name,items=items,jobpath=jobpath)
-    if eppath:
+    ep = sub_episode_get(episode_name, items, suffix, jobpath)
+    if ep is not None:
       try:
-        with open(os.path.join(eppath,'vyanchors.json'),'r') as r:
-          loaded['anchors'] = json.load(r)
-          msg = 'Loaded episode "{n}" from results at {p}'.format(n=episode_name,p=eppath)
+        loaded['anchors'] = json.loads(Path(os.path.join(ep['episode_path'],'vyanchors.json')).read_text())
+        loaded['suffix'] = ep['suffix']
+        msg = 'Loaded episode "{n}" from results at {p}'.format(n=episode_name,p=ep['episode_path'])
       except Exception as exc:
         logging.error('Failed to load anchors {}'.format(exc))
+    else:
+      epperms = vytools.episode.get_episode_permutations(episode_name, items=items, jobpath=jobpath)
+      loaded['suffixes'] = [k for k in epperms.keys()]
   return (loaded,msg)
 
-def get_compose(compose_name,items,anchors=None):
+def compose_get(compose_name,items,anchors=None):
   compose = items.get(compose_name,{})
   loaded = {}
   if compose:
@@ -256,9 +257,9 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
     elif tag == '__stop__':
       vytools.composerun.stop()
     elif tag == '__compose__':
-      return response.json(get_compose(request.json.get('name',''), vyitems))
+      return response.json(compose_get(request.json.get('name',''), vyitems))
     elif tag == '__episode__':
-      ep,pth = get_episode(request.json.get('name',''), vyitems, jobpath=jobpath)
+      ep,pth = episode_get(request.json.get('name',''), vyitems, suffix=request.json.get('suffix',None), jobpath=jobpath)
       await STATUSES.add('episode',pth,timeout=5)
       return response.json(ep)
     elif tag == '__item__':
@@ -281,11 +282,12 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
       episode_name = request.json.get('name','')
       if episode_name.startswith('episode:'):
         artifact_name = request.json.get('artifact','_')
-        apaths = vytools.episode.artifact_paths(episode_name, vyitems, jobpath=jobpath)
-        if artifact_name in apaths:
-          return await response.file(apaths[artifact_name])
-        else:
-          logging.error('Could not find artifact {n} in {l}'.format(n=artifact_name,l=','.join(apaths)))
+        ep = sub_episode_get(episode_name, vyitems, suffix=request.json.get('suffix',None), jobpath=jobpath)
+        if ep is not None:
+          if artifact_name in ep['artifact_paths']:
+            return await response.file(ep['artifact_paths'][artifact_name])
+          else:
+            logging.error('Could not find artifact {n} in {l}'.format(n=artifact_name,l=','.join(ep['artifact_paths'])))
     return response.json({})
 
   for tag in sockets:
