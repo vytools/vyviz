@@ -123,7 +123,11 @@ const compose_view = function(v,episode_suffix) {
   if (['/vy/action/__compose__', '/vy/action/__episode__'].indexOf(typ) > -1) {
     utilities.serverfetch(typ, {name:v,suffix:episode_suffix},function(d) {
       if (d.hasOwnProperty('suffixes')) {
-        let butts = d.suffixes.map(s => `<button class="btn btn-sm btn-secondary m-1">${s}</button>`).join('');
+        let butts = '';
+        for (var ii = 0; ii < d.suffixes.length; ii++) {
+          let s = d.suffixes[ii];
+          butts += `<button class="btn btn-sm btn-secondary m-1" data-suffix="${s}">${ii+1}: ${s}</button>`;
+        }
         iframe.setAttribute('srcdoc',`<html>
         <head>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
@@ -132,7 +136,7 @@ const compose_view = function(v,episode_suffix) {
         <script>let name="${v}";
         document.addEventListener('click',(ev) => {
           let x = ev.target.closest('button');
-          if (x) parent.postMessage({topic:'__sub_episode__', name:name, suffix:x.innerHTML},"*");
+          if (x) parent.postMessage({topic:'__sub_episode__', name:name, suffix:x.dataset.suffix},"*");
         })
         </script></html>`);
       } else {
