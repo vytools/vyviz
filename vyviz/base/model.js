@@ -6,9 +6,8 @@ export let MODEL = {
       repo:{bl:'Re',color:'yellow'},
       definition:{bl:'De',color:'red'},
       object:{bl:'Ob',color:'orange'},
-      vydir:{bl:'Vd',color:'blue'},
       stage:{bl:'St',color:'purple'},
-      compose:{bl:'Co',color:'green'},
+      compose:{bl:'Co',color:'blue'},
       episode:{bl:'Ep',color:'black'},
       image:{bl:'Im',color:'pink'}
     }  

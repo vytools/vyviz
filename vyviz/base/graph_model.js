@@ -24,7 +24,7 @@ const set_editor = function(item, EDITOR) {
   let it = MODEL.itmscontent[item];
   d.innerHTML = `${item}<br/><span><small>path:${(it && it.path) ? it.path : '?'}</small></span>`;
   EDITOR_ITEM = item;
-  if (item.startsWith('repo:') || item.startsWith('vydir:') || item.startsWith('image:')) {
+  if (item.startsWith('repo:') || item.startsWith('image:')) {
     populate_editor(item+'.json', JSON.stringify(it,null,2), EDITOR);
   } else {
     utilities.serverfetch('/vy/action/__item__',{name:item},function(res) {

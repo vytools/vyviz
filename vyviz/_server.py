@@ -190,7 +190,8 @@ def server(vyitems=None, jobpath=None, port=17171, subscribers=None,
   async def _app_things(request, tag):
     if tag.startswith('/vy/'):
       return response.empty()
-    pth = vytools.utils.get_thing_path('vydir:'+tag,vyitems)
+    if tag.startswith('repo/'): tag = tag.replace('repo/','repo:')
+    pth = vytools.utils.get_thing_path(tag,vyitems)
     if pth:
       return await response.file(pth,headers={'Content-Type':mimetype(pth)})
     else:
